@@ -108,4 +108,6 @@ func TestAdjustValues(t *testing.T) {
 	assert.Equal(t, 15 , a.Values["Strength"])
 
 	fmt.Println(a.ToPrettyString())
+	//fmt.Println(a.ToString())
+	//fmt.Println(a.ToJson())
 }

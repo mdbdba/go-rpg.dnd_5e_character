@@ -76,7 +76,6 @@ func GetAbilityRollingOptions() (options []string) {
 	return
 }
 
-
 // rollRawAbilitySlice rolls up the slice of ints to be used in the
 //  ability array generation for the "strict" and "common" roll options.
 //  Where:
@@ -183,6 +182,8 @@ func GetBaseAbilityArray(sortOrder []string,
 //    AdditionalBonus any other values that influence ability values
 //    Values the summation of Base + ArchetypeBonus (if used) +
 //           LevelChangeIncrease + AdditionalBonus
+//    Modifiers the modifiers based on Values
+//
 type AbilityArray struct {
 	Raw []int
 	RollingOption string
@@ -193,8 +194,8 @@ type AbilityArray struct {
 	LevelChangeIncrease map[string]int
 	AdditionalBonus map[string]int
 	Values map[string]int
+	Modifiers map[string]int
 }
-
 
 // GetAbilityArray is the function that pulls all the pieces together.
 func GetAbilityArray(RollingOption string,
@@ -203,14 +204,8 @@ func GetAbilityArray(RollingOption string,
 	AdditionalBonus map[string]int) *AbilityArray {
 	b, raw := GetBaseAbilityArray(SortOrder, RollingOption)
 	values := AbilityArrayTemplate()
-	for k, _ := range values {
-		atb := ArchetypeBonus[k]
-		if ArchetypeBonusIgnored {
-			atb = 0
-		}
-		values[k] = b[k] + atb + LevelChangeIncrease[k] + AdditionalBonus[k]
-	}
-	return &AbilityArray{
+	mods := AbilityArrayTemplate()
+	a := AbilityArray{
 		Raw:                   raw,
 		RollingOption:         RollingOption,
 		SortOrder:             SortOrder,
@@ -220,8 +215,10 @@ func GetAbilityArray(RollingOption string,
 		LevelChangeIncrease:   LevelChangeIncrease,
 		AdditionalBonus:       AdditionalBonus,
 		Values:                values,
+		Modifiers:             mods,
 	}
-
+	a.SetValuesAndModifiers()
+	return &a
 }
 
 func (pa *AbilityArray) ToJson() string {
@@ -231,24 +228,28 @@ func (pa *AbilityArray) ToJson() string {
 	}
 	return string(j)
 }
-
 func (pa *AbilityArray) ToPrettyString() string {
 	return pa.ConvertToString(true)
 }
-
 func (pa *AbilityArray) ToString() string {
 	return pa.ConvertToString(false)
 }
 
-func reconcileMaps(src map[string]int, adj map[string]int) map[string]int {
-	r := AbilityArrayTemplate()
-	for k,_ := range src {
-		r[k] = src[k] + adj[k]
+func (pa *AbilityArray) SetValuesAndModifiers() {
+
+	for k, _ := range pa.Base {
+		atb := pa.ArchetypeBonus[k]
+		if pa.ArchetypeBonusIgnored {
+			atb = 0
+		}
+		pa.Values[k] = pa.Base[k] + atb + pa.LevelChangeIncrease[k] +
+			pa.AdditionalBonus[k]
 	}
-	fmt.Println(src)
-	fmt.Println(adj)
-	fmt.Println(r)
-	return r
+
+	lu := AbilityScoreModifier()
+	for k, v := range pa.Values {
+		pa.Modifiers[k] = lu[v]
+	}
 }
 
 // AdjustValues changes the totals in the maps within an AbilityArray
@@ -258,7 +259,6 @@ func reconcileMaps(src map[string]int, adj map[string]int) map[string]int {
 //    Values is a map containing the adjustments to make
 func (pa *AbilityArray) AdjustValues(ValueType string, Ability string,
 	ChangeValue int) {
-
 	switch ValueType {
 	case "ArchetypeBonus":
 		pa.ArchetypeBonus[Ability] += ChangeValue
@@ -267,15 +267,7 @@ func (pa *AbilityArray) AdjustValues(ValueType string, Ability string,
 	case "AdditionalBonus":
 		pa.AdditionalBonus[Ability] += ChangeValue
 	}
-
-	for k, _ := range pa.Values {
-		atb := pa.ArchetypeBonus[k]
-		if pa.ArchetypeBonusIgnored {
-			atb = 0
-		}
-		pa.Values[k] = pa.Base[k] + atb + pa.LevelChangeIncrease[k] +
-			pa.AdditionalBonus[k]
-	}
+	pa.SetValuesAndModifiers()
 }
 
 func MapStringIntToString(src map[string]int) (tgt string) {
@@ -321,17 +313,18 @@ func (pa *AbilityArray) ConvertToString(p bool) (s string) {
 	lvlStr := AbilityMapToString(pa.LevelChangeIncrease)
 	addbStr := AbilityMapToString(pa.AdditionalBonus)
 	valStr := AbilityMapToString(pa.Values)
+	modStr := AbilityMapToString(pa.Modifiers)
 	pStr := ""
 	f := "AbilityArray -- %sRaw: %s, %sRollingOption: %s, " +
 		"%sSortOrder: %s, %sBaseArray: %s, %sArchetypeBonus: %s, " +
 		"%sArchetypeBonusIgnored: %v, %sLevelChangeIncreases: %s, " +
-		"%sAdditionalBonus: %s, %sValues: %s\n"
+		"%sAdditionalBonus: %s, %sValues: %s, %sModifiers: %s\n"
 	if p {
 		pStr = "\n\t"
 		f = "AbilityArray -- %sRaw: %s, %sRollingOption: %s, " +
 			"%sSortOrder: %90s, %sBaseArray: %114s, %sArchetypeBonus: %109s, " +
 			"%sArchetypeBonusIgnored: %v, %sLevelChangeIncreases: %s, " +
-			"%sAdditionalBonus: %108s, %sValues: %117s\n"
+			"%sAdditionalBonus: %108s, %sValues: %117s, %sModifiers: %114s\n"
 	}
 	s = fmt.Sprintf(f,
 		pStr, rawStr,
@@ -342,7 +335,8 @@ func (pa *AbilityArray) ConvertToString(p bool) (s string) {
 		pStr, pa.ArchetypeBonusIgnored,
 		pStr, lvlStr,
 		pStr, addbStr,
-		pStr, valStr)
+		pStr, valStr,
+		pStr, modStr)
 	return
 }
 
