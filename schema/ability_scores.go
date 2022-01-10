@@ -194,6 +194,8 @@ type AbilityArray struct {
 	AdditionalBonus map[string]int
 	Values map[string]int
 }
+
+
 // GetAbilityArray is the function that pulls all the pieces together.
 func GetAbilityArray(RollingOption string,
 	SortOrder []string, ArchetypeBonus map[string]int,
@@ -236,6 +238,44 @@ func (pa *AbilityArray) ToPrettyString() string {
 
 func (pa *AbilityArray) ToString() string {
 	return pa.ConvertToString(false)
+}
+
+func reconcileMaps(src map[string]int, adj map[string]int) map[string]int {
+	r := AbilityArrayTemplate()
+	for k,_ := range src {
+		r[k] = src[k] + adj[k]
+	}
+	fmt.Println(src)
+	fmt.Println(adj)
+	fmt.Println(r)
+	return r
+}
+
+// AdjustValues changes the totals in the maps within an AbilityArray
+// and recalculates the total values.
+//  Where:
+//    ValueType is "ArchetypeBonus", "LevelChangeIncrease", or "AdditionalBonus".
+//    Values is a map containing the adjustments to make
+func (pa *AbilityArray) AdjustValues(ValueType string, Ability string,
+	ChangeValue int) {
+
+	switch ValueType {
+	case "ArchetypeBonus":
+		pa.ArchetypeBonus[Ability] += ChangeValue
+	case "LevelChangeIncrease":
+		pa.LevelChangeIncrease[Ability] += ChangeValue
+	case "AdditionalBonus":
+		pa.AdditionalBonus[Ability] += ChangeValue
+	}
+
+	for k, _ := range pa.Values {
+		atb := pa.ArchetypeBonus[k]
+		if pa.ArchetypeBonusIgnored {
+			atb = 0
+		}
+		pa.Values[k] = pa.Base[k] + atb + pa.LevelChangeIncrease[k] +
+			pa.AdditionalBonus[k]
+	}
 }
 
 func MapStringIntToString(src map[string]int) (tgt string) {

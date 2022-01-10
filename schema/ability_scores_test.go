@@ -85,6 +85,27 @@ func TestGetAbilityArray(t *testing.T) {
 	assert.Equal(t, 17, a.Values["Dexterity"])
 	assert.Equal(t, 9, a.Values["Intelligence"])
 
+}
 
+func TestAdjustValues(t *testing.T) {
+	rollingOption := "standard"
+	sortOrder := []string{"Dexterity","Constitution","Strength",
+		"Charisma","Wisdom","Intelligence"}
+	ArchetypeBonus := AbilityArrayTemplate()
+	ArchetypeBonusIgnored := false
+	LevelChangeIncrease := AbilityArrayTemplate()
+	AdditionalBonus := AbilityArrayTemplate()
 
+	a := GetAbilityArray(rollingOption,sortOrder,ArchetypeBonus,
+		ArchetypeBonusIgnored,LevelChangeIncrease, AdditionalBonus)
+	a.AdjustValues("ArchetypeBonus", "Charisma", 2)
+	a.AdjustValues("ArchetypeBonus", "Intelligence", 1)
+	assert.Equal(t, 14, a.Values["Charisma"])
+	assert.Equal(t, 9, a.Values["Intelligence"])
+	a.AdjustValues("LevelChangeIncrease", "Dexterity", 2)
+	assert.Equal(t, 17, a.Values["Dexterity"])
+	a.AdjustValues("AdditionalBonus", "Strength",2)
+	assert.Equal(t, 15 , a.Values["Strength"])
+
+	fmt.Println(a.ToPrettyString())
 }
