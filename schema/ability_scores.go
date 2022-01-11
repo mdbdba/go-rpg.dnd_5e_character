@@ -3,9 +3,11 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/itchyny/timefmt-go"
 	common "github.com/mdbdba/go_rpg_commonUtils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"time"
 )
 
 // AbilityDescriptions returns a map[string]string holding all the ability
@@ -85,6 +87,7 @@ func GetAbilityRollingOptions() (options []string) {
 //    common = 4d6 drop lowest 1
 //  The rest of the options are set values defined in AbilityAssign
 func rollRawAbilitySlice(rollOption string, logger *zap.SugaredLogger) (rollSlice []int) {
+	nowStr := timefmt.Format(time.Now(),"%s")
 	timesToRoll := 4
 	options := []string{"drop lowest 1"}
 	if rollOption == "strict" {
@@ -92,7 +95,8 @@ func rollRawAbilitySlice(rollOption string, logger *zap.SugaredLogger) (rollSlic
 		options = make([]string,0)
 	}
 	for i := 0; i < 6; i++ {
-		r, err := common.Perform(6, timesToRoll, options...)
+		msg := fmt.Sprintf("{\"RawAbilitySlice\": \"%s-%d/6\"", nowStr, i+1)
+		r, err := common.Perform(6, timesToRoll, msg, options...)
 		if err != nil {
 			panic("Roll attempt failed")
 		}
