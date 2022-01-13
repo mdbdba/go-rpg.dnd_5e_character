@@ -291,7 +291,6 @@ func GetAbilityArray(RollingOption string,
 }
 
 func (pa *AbilityArray) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-
 	enc.AddString("Raw", common.IntSliceToString(pa.Raw))
 	enc.AddString("RollingOption", pa.RollingOption)
 	enc.AddString("SortOrder", common.StringSliceToString(pa.SortOrder))
