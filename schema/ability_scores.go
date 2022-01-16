@@ -25,7 +25,7 @@ var AbilityDescriptions = func() map[string]string {
 
 // AbilityScoreModifier returns a map of modifiers for ability score rolls.
 var AbilityScoreModifier = func() map[int]int {
-	return map[int]int {
+	return map[int]int{
 		1: -5, 2: -4, 3: -4,
 		4: -3, 5: -3,
 		6: -2, 7: -2,
@@ -46,21 +46,21 @@ var AbilityScoreModifier = func() map[int]int {
 // AbilityAssign returns a map with all the options for "rolling" the
 // ability values and in the case of set ones, the values to be used.
 var AbilityAssign = func() map[string][]int {
-	return map[string][]int {
-		"predefined": {},
-		"strict": {}, // 3d6
-		"common": {}, // 4d6 drop lowest
-		"standard": {15, 14, 13, 12, 10, 8},
-		"pointbuy_even": {13, 13, 13, 12, 12, 12},
-		"pointbuy_onemax": {15, 12, 12, 12, 11, 11},
-		"pointbuy_twomax": {15, 15, 11, 10, 10, 10},
+	return map[string][]int{
+		"predefined":        {},
+		"strict":            {}, // 3d6
+		"common":            {}, // 4d6 drop lowest
+		"standard":          {15, 14, 13, 12, 10, 8},
+		"pointbuy_even":     {13, 13, 13, 12, 12, 12},
+		"pointbuy_onemax":   {15, 12, 12, 12, 11, 11},
+		"pointbuy_twomax":   {15, 15, 11, 10, 10, 10},
 		"pointbuy_threemax": {15, 15, 15, 8, 8, 8},
 	}
 }
 
 // AbilityArrayTemplate is used to get a map with the abilities as keys
 var AbilityArrayTemplate = func() map[string]int {
-	return map[string]int {
+	return map[string]int{
 		"Strength":     0,
 		"Dexterity":    0,
 		"Constitution": 0,
@@ -86,16 +86,23 @@ func GetAbilityRollingOptions() (options []string) {
 //    strict = 3d6
 //    common = 4d6 drop lowest 1
 //  The rest of the options are set values defined in AbilityAssign
-func rollRawAbilitySlice(rollOption string, logger *zap.SugaredLogger) (rollSlice []int) {
-	nowStr := timefmt.Format(time.Now(),"%s")
+func rollRawAbilitySlice(rollOption string,
+	logger *zap.SugaredLogger) (rollSlice []int, err error) {
+	nowStr := timefmt.Format(time.Now(), "%s")
 	timesToRoll := 4
 	options := []string{"drop lowest 1"}
 	if rollOption == "strict" {
 		timesToRoll = 3
-		options = make([]string,0)
+		options = make([]string, 0)
 	}
 	for i := 0; i < 6; i++ {
-		msg := fmt.Sprintf("{\"RawAbilitySlice\": \"%s-%d/6\"", nowStr, i+1)
+		var rnd string
+		rnd, err = common.GenerateRandomString(5)
+		if err != nil {
+			return
+		}
+		msg := fmt.Sprintf("{\"RawAbilitySlice\": \"%s-%s-%d/6\"", nowStr,
+			rnd, i+1)
 		r, err := common.Perform(6, timesToRoll, msg, options...)
 		if err != nil {
 			panic("Roll attempt failed")
@@ -103,7 +110,7 @@ func rollRawAbilitySlice(rollOption string, logger *zap.SugaredLogger) (rollSlic
 		//log the roll results, then harvest roll results
 		rollSlice = append(rollSlice, r.Result)
 		//Log the results
-		logger.Infow("Roll","Sides",r.Sides,
+		logger.Infow("Roll", "Sides", r.Sides,
 			"TimesToRoll", r.TimesToRoll,
 			"RollsGenerated", common.IntSliceToString(r.RollsGenerated),
 			"RollsUsed", common.IntSliceToString(r.RollsUsed),
@@ -117,7 +124,7 @@ func rollRawAbilitySlice(rollOption string, logger *zap.SugaredLogger) (rollSlic
 //  array that has an assumed order.  This will be used mostly for testing or
 //  balance comparisons.  If a player has used this method we are expecting
 //  this is an import of an existing player.  If not, it would be suspicious.
-func GetPreGeneratedBaseAbilityArray(pre []int)  (map[string]int, []string) {
+func GetPreGeneratedBaseAbilityArray(pre []int) (map[string]int, []string) {
 	sortOrder := []string{
 		"Strength",
 		"Dexterity",
@@ -127,7 +134,7 @@ func GetPreGeneratedBaseAbilityArray(pre []int)  (map[string]int, []string) {
 		"Charisma",
 	}
 	retObj := AbilityArrayTemplate()
-	for i:=0; i<len(pre); i++ {
+	for i := 0; i < len(pre); i++ {
 		switch i {
 		case 0:
 			retObj["Strength"] = pre[i]
@@ -143,7 +150,7 @@ func GetPreGeneratedBaseAbilityArray(pre []int)  (map[string]int, []string) {
 			retObj["Charisma"] = pre[i]
 		}
 	}
-	return retObj,sortOrder
+	return retObj, sortOrder
 }
 
 // GetBaseAbilityArray returns a generated Base Ability array and the unsorted
@@ -152,14 +159,20 @@ func GetPreGeneratedBaseAbilityArray(pre []int)  (map[string]int, []string) {
 //  abilities depends on a sorting order provided by the sortSlice and
 //  a rolling option.
 func GetBaseAbilityArray(sortOrder []string, rollingOption string,
-	logger *zap.SugaredLogger) ( r map[string]int, rawValueSlice []int) {
+	logger *zap.SugaredLogger) (r map[string]int, rawValueSlice []int, err error) {
 	r = AbilityArrayTemplate()
 	lu := AbilityAssign()
 	switch rollingOption {
 	case "common":
-		rawValueSlice = rollRawAbilitySlice(rollingOption, logger)
+		rawValueSlice, err = rollRawAbilitySlice(rollingOption, logger)
+		if err != nil {
+			return
+		}
 	case "strict":
-		rawValueSlice = rollRawAbilitySlice(rollingOption, logger)
+		rawValueSlice, err = rollRawAbilitySlice(rollingOption, logger)
+		if err != nil {
+			return
+		}
 	case "standard":
 		rawValueSlice = lu["standard"]
 	case "pointbuy_even":
@@ -171,7 +184,7 @@ func GetBaseAbilityArray(sortOrder []string, rollingOption string,
 	case "pointbuy_threemax":
 		rawValueSlice = lu["pointbuy_threemax"]
 	}
-	for i := 0; i <len(sortOrder); i++ {
+	for i := 0; i < len(sortOrder); i++ {
 		switch sortOrder[i] {
 		case "Strength":
 			r["Strength"] = rawValueSlice[i]
@@ -189,9 +202,9 @@ func GetBaseAbilityArray(sortOrder []string, rollingOption string,
 	}
 	logger.Infow("Base Array Info",
 		"rawValues", common.IntSliceToString(rawValueSlice),
-		"sortedValues",            AbilityMapToString(r),
+		"sortedValues", AbilityMapToString(r),
 	)
-	return r, rawValueSlice
+	return r, rawValueSlice, err
 }
 
 // AbilityArray is the struct that completely defines the Ability Array and
@@ -211,21 +224,21 @@ func GetBaseAbilityArray(sortOrder []string, rollingOption string,
 //    CtxRef is the context reference for the assignment
 //
 type AbilityArray struct {
-	Raw []int
-	RollingOption string
-	SortOrder []string
-	Base map[string]int
-	ArchetypeBonus map[string]int
+	Raw                   []int
+	RollingOption         string
+	SortOrder             []string
+	Base                  map[string]int
+	ArchetypeBonus        map[string]int
 	ArchetypeBonusIgnored bool
-	LevelChangeIncrease map[string]int
-	AdditionalBonus map[string]int
-	Values map[string]int
-	Modifiers map[string]int
-	CtxRef string
-	IsMonsterOrGod bool
+	LevelChangeIncrease   map[string]int
+	AdditionalBonus       map[string]int
+	Values                map[string]int
+	Modifiers             map[string]int
+	CtxRef                string
+	IsMonsterOrGod        bool
 }
 
-func GetPreGeneratedAbilityArray( Raw []int, ArchetypeBonus map[string]int,
+func GetPreGeneratedAbilityArray(Raw []int, ArchetypeBonus map[string]int,
 	ArchetypeBonusIgnored bool, LevelChangeIncrease map[string]int,
 	AdditionalBonus map[string]int, CtxRef string, IsMonsterOrGod bool) *AbilityArray {
 	b, sortOrder := GetPreGeneratedBaseAbilityArray(Raw)
@@ -267,8 +280,11 @@ func GetAbilityArray(RollingOption string,
 	SortOrder []string, ArchetypeBonus map[string]int,
 	ArchetypeBonusIgnored bool, LevelChangeIncrease map[string]int,
 	AdditionalBonus map[string]int, CtxRef string, IsMonsterOrGod bool,
-	logger *zap.SugaredLogger) *AbilityArray {
-	b, raw := GetBaseAbilityArray(SortOrder, RollingOption, logger)
+	logger *zap.SugaredLogger) (*AbilityArray, error) {
+	b, raw, err := GetBaseAbilityArray(SortOrder, RollingOption, logger)
+	if err != nil {
+		return &AbilityArray{}, err
+	}
 	values := AbilityArrayTemplate()
 	mods := AbilityArrayTemplate()
 	a := AbilityArray{
@@ -287,7 +303,7 @@ func GetAbilityArray(RollingOption string,
 	}
 	a.setValuesAndModifiers()
 	logger.Infow("GetAbilityArray", zap.Object("AbilityArray", &a))
-	return &a
+	return &a, nil
 }
 
 func (pa *AbilityArray) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -307,7 +323,7 @@ func (pa *AbilityArray) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 func (pa *AbilityArray) ToJson() string {
-    j, err := json.Marshal(pa)
+	j, err := json.Marshal(pa)
 	if err != nil {
 		panic("Issue converting Ability Array to JSON.")
 	}
@@ -324,7 +340,7 @@ func (pa *AbilityArray) ToString() string {
 // Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma
 func (pa *AbilityArray) GetScore(ability string) (int, error) {
 	if ValidateAbilityName(ability) {
-		return pa.Values[ability],nil
+		return pa.Values[ability], nil
 	}
 	return -10, fmt.Errorf("value passed for ability, %s, is not correct", ability)
 }
@@ -333,7 +349,7 @@ func (pa *AbilityArray) GetScore(ability string) (int, error) {
 // Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma
 func (pa *AbilityArray) GetModifier(ability string) (int, error) {
 	if ValidateAbilityName(ability) {
-		return pa.Modifiers[ability],nil
+		return pa.Modifiers[ability], nil
 	}
 	return -10, fmt.Errorf("value passed for ability, %s, is not correct", ability)
 }
@@ -341,9 +357,9 @@ func (pa *AbilityArray) GetModifier(ability string) (int, error) {
 func (pa *AbilityArray) setValuesAndModifiers() {
 	maxVal := 20
 	if pa.IsMonsterOrGod {
-		maxVal = 30  // Gods and Monsters can have ability scores up to 30
+		maxVal = 30 // Gods and Monsters can have ability scores up to 30
 	}
-	for k, _ := range pa.Base {
+	for k := range pa.Base {
 		atb := pa.ArchetypeBonus[k]
 		if pa.ArchetypeBonusIgnored {
 			atb = 0
@@ -351,7 +367,9 @@ func (pa *AbilityArray) setValuesAndModifiers() {
 		tVal := pa.Base[k] + atb + pa.LevelChangeIncrease[k] +
 			pa.AdditionalBonus[k]
 		// Values cannot exceed 20 or 30. Set that as max.
-		if tVal > maxVal { tVal = maxVal }
+		if tVal > maxVal {
+			tVal = maxVal
+		}
 		pa.Values[k] = tVal
 	}
 
@@ -390,10 +408,10 @@ func (pa *AbilityArray) AdjustValues(ValueType string, Ability string,
 
 // AbilityMapToString converts a map keyed with the abilities to a single string.
 func AbilityMapToString(src map[string]int) (tgt string) {
-	tgt = fmt.Sprintf("{\"Strength\": %2d, \"Dexterity\": %2d, \"Constitution\": %2d, " +
+	tgt = fmt.Sprintf("{\"Strength\": %2d, \"Dexterity\": %2d, \"Constitution\": %2d, "+
 		"\"Intelligence\": %2d, \"Wisdom\": %2d, \"Charisma\": %2d}",
-		src["Strength"],src["Dexterity"],src["Constitution"],src["Intelligence"],
-		src["Wisdom"],src["Charisma"])
+		src["Strength"], src["Dexterity"], src["Constitution"], src["Intelligence"],
+		src["Wisdom"], src["Charisma"])
 	return
 }
 
@@ -419,7 +437,7 @@ func (pa *AbilityArray) ConvertToString(p bool) (s string) {
 		f = "AbilityArray -- %sRaw:                   %s, %sRollingOption:         %s, " +
 			"%sSortOrder: %91s, %sBaseArray: %115s, %sArchetypeBonus: %110s, " +
 			"%sArchetypeBonusIgnored: %v, %sLevelChangeIncreases:  %s, " +
-			"%sAdditionalBonus: %109s, %sValues: %118s, %sModifiers: %115s, "+
+			"%sAdditionalBonus: %109s, %sValues: %118s, %sModifiers: %115s, " +
 			"%sCtxRef:                %s, %sIsMonsterOrGod:        %v\n"
 	}
 	s = fmt.Sprintf(f,
@@ -437,5 +455,3 @@ func (pa *AbilityArray) ConvertToString(p bool) (s string) {
 		pStr, pa.IsMonsterOrGod)
 	return
 }
-
-
