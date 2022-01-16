@@ -7,6 +7,7 @@ import (
 	common "github.com/mdbdba/go_rpg_commonUtils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"strconv"
 	"time"
 )
 
@@ -88,7 +89,13 @@ func GetAbilityRollingOptions() (options []string) {
 //  The rest of the options are set values defined in AbilityAssign
 func rollRawAbilitySlice(rollOption string,
 	logger *zap.SugaredLogger) (rollSlice []int, err error) {
+	// %s is The number of seconds since the Epoch
 	nowStr := timefmt.Format(time.Now(), "%s")
+	var rnd string
+	rnd, err = common.GenerateRandomString(5)
+	if err != nil {
+		return
+	}
 	timesToRoll := 4
 	options := []string{"drop lowest 1"}
 	if rollOption == "strict" {
@@ -96,13 +103,8 @@ func rollRawAbilitySlice(rollOption string,
 		options = make([]string, 0)
 	}
 	for i := 0; i < 6; i++ {
-		var rnd string
-		rnd, err = common.GenerateRandomString(5)
-		if err != nil {
-			return
-		}
-		msg := fmt.Sprintf("{\"RawAbilitySlice\": \"%s-%s-%d/6\"", nowStr,
-			rnd, i+1)
+		msg := fmt.Sprintf("{\"RawAbilitySlice\": \"%s-%s-%s-%d/6\"", nowStr,
+			rnd, strconv.FormatInt(time.Now().UnixNano(), 10), i+1)
 		r, err := common.Perform(6, timesToRoll, msg, options...)
 		if err != nil {
 			panic("Roll attempt failed")
@@ -117,6 +119,7 @@ func rollRawAbilitySlice(rollOption string,
 			"Options", r.Options,
 			"AdditiveValue", r.AdditiveValue)
 	}
+	rollSlice = common.SortDescendingIntSlice(rollSlice)
 	return
 }
 
@@ -165,6 +168,7 @@ func GetBaseAbilityArray(sortOrder []string, rollingOption string,
 	switch rollingOption {
 	case "common":
 		rawValueSlice, err = rollRawAbilitySlice(rollingOption, logger)
+		fmt.Println(rawValueSlice)
 		if err != nil {
 			return
 		}

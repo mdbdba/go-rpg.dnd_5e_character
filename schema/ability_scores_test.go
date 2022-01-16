@@ -83,6 +83,28 @@ func TestGetBaseAbilityArray(t *testing.T) {
 	require.Equal(t, 1, observedLogs.Len())
 }
 
+func TestGetBaseAbilityArrayWithRolls(t *testing.T) {
+	// Given
+	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
+	observedLoggerSugared := zap.New(observedZapCore).Sugar()
+	sortOrder := []string{"Dexterity", "Constitution", "Strength",
+		"Charisma", "Wisdom", "Intelligence"}
+	rollingOption := "common"
+
+	// When
+	actual, r, err := GetBaseAbilityArray(sortOrder, rollingOption, observedLoggerSugared)
+
+	// Then
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 6, len(r))
+	assert.GreaterOrEqual(t, actual["Dexterity"], actual["Constitution"])
+	assert.GreaterOrEqual(t, actual["Constitution"], actual["Strength"])
+	assert.GreaterOrEqual(t, actual["Strength"], actual["Charisma"])
+	assert.GreaterOrEqual(t, actual["Charisma"], actual["Wisdom"])
+	assert.GreaterOrEqual(t, actual["Wisdom"], actual["Intelligence"])
+	require.Equal(t, 7, observedLogs.Len()) // 6 dice rolls and the sorted map
+}
+
 func TestGetPreGeneratedAbilityArray(t *testing.T) {
 	Raw := []int{18, 17, 16, 15, 14, 13}
 	ArchetypeBonus := AbilityArrayTemplate()
