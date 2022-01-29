@@ -16,6 +16,8 @@ github.com/mdbdba/go_rpg_commonUtils v0.3.0 h1:bCJR41KmtIg0jk79iY9K6I3K+BK5013+/
 github.com/mdbdba/go_rpg_commonUtils v0.3.0/go.mod h1:/aLQzwE8Oq4gbnfjrnRaE+R7X4OlKOHhqDv2PtkRHm8=
 github.com/mdbdba/go_rpg_commonUtils v0.4.0 h1:JXXnAGkhrZ66+eiPvglBdYEzk4dioD2h0gEXJ9fOPbc=
 github.com/mdbdba/go_rpg_commonUtils v0.4.0/go.mod h1:/aLQzwE8Oq4gbnfjrnRaE+R7X4OlKOHhqDv2PtkRHm8=
+github.com/mdbdba/go_rpg_commonUtils v0.5.0 h1:iEenO84z4Vx26ObgSm9F8obQl/lUxZNc1cE0qYyvyec=
+github.com/mdbdba/go_rpg_commonUtils v0.5.0/go.mod h1:AJT0WrY3bhd8vgPaEhdNyqlGBwDclzAm7dUpz8KxNnk=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

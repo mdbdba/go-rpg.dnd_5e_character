@@ -3,7 +3,7 @@ module github.com/mdbdba/go_rpg_dnd_5e_character
 go 1.17
 
 require (
-	github.com/mdbdba/go_rpg_commonUtils v0.4.0
+	github.com/mdbdba/go_rpg_commonUtils v0.5.0
 	github.com/stretchr/testify v1.7.0
 )
 

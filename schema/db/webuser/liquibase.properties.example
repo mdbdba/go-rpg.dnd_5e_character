@@ -1,0 +1,7 @@
+driver=org.postgresql.Driver
+url=jdbc:postgresql://localhost:5432/webuser
+username=usersvc
+password=superSecretPasswordHere123
+changeLogFile=main.xml
+
+liquibase.hub.mode=off

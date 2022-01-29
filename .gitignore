@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# db change control configs
+liquibase.properties
+
 # Test binary, built with `go test -c`
 *.test
 
